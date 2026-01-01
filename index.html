@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Bilingual Todo Management Application with Kanban Board">
+    <meta name="theme-color" content="#3b82f6">
+    <title>Todo Manager</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo" data-i18n="app.title">Todo Manager</h1>
+                <div class="header-controls">
+                    <button id="languageToggle" class="btn-icon" title="Switch Language">
+                        <span class="lang-indicator">EN</span>
+                    </button>
+                    <button id="darkModeToggle" class="btn-icon" title="Toggle Dark Mode">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                    <button id="menuToggle" class="btn-icon mobile-only" title="Menu">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-section">
+                    <h2 data-i18n="sidebar.views">Views</h2>
+                    <nav class="view-nav">
+                        <button class="view-btn active" data-view="list" data-i18n="sidebar.listView">List View</button>
+                        <button class="view-btn" data-view="kanban" data-i18n="sidebar.kanbanView">Kanban Board</button>
+                    </nav>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="section-header">
+                        <h2 data-i18n="sidebar.categories">Categories</h2>
+                        <button id="addCategoryBtn" class="btn-icon-small" title="Add Category">+</button>
+                    </div>
+                    <div id="categoryList" class="category-list"></div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h2 data-i18n="sidebar.actions">Actions</h2>
+                    <button id="exportBtn" class="sidebar-btn" data-i18n="sidebar.export">Export Data</button>
+                    <button id="importBtn" class="sidebar-btn" data-i18n="sidebar.import">Import Data</button>
+                    <input type="file" id="importFile" accept=".json" style="display: none;">
+                </div>
+            </aside>
+
+            <!-- Content Area -->
+            <div class="content">
+                <!-- Controls -->
+                <div class="controls">
+                    <div class="search-bar">
+                        <svg class="icon search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <input type="text" id="searchInput" placeholder="Search tasks..." data-i18n-placeholder="controls.searchPlaceholder">
+                    </div>
+                    <button id="addTaskBtn" class="btn-primary" data-i18n="controls.addTask">+ Add Task</button>
+                </div>
+
+                <!-- Filters and Sort -->
+                <div class="filters">
+                    <select id="filterCategory" class="filter-select">
+                        <option value="" data-i18n="filters.allCategories">All Categories</option>
+                    </select>
+                    <select id="filterStatus" class="filter-select">
+                        <option value="" data-i18n="filters.allStatus">All Status</option>
+                        <option value="active" data-i18n="filters.active">Active</option>
+                        <option value="completed" data-i18n="filters.completed">Completed</option>
+                        <option value="overdue" data-i18n="filters.overdue">Overdue</option>
+                    </select>
+                    <select id="sortBy" class="filter-select">
+                        <option value="createdDate" data-i18n="filters.sortByCreated">Sort by Created</option>
+                        <option value="dueDate" data-i18n="filters.sortByDue">Sort by Due Date</option>
+                        <option value="priority" data-i18n="filters.sortByPriority">Sort by Priority</option>
+                    </select>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div class="progress-info">
+                        <span data-i18n="progress.overall">Overall Progress</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <span><span id="completedCount">0</span> <span data-i18n="progress.completed">completed</span></span>
+                        <span><span id="totalCount">0</span> <span data-i18n="progress.total">total</span></span>
+                    </div>
+                </div>
+
+                <!-- List View -->
+                <div id="listView" class="view-container active">
+                    <div id="taskList" class="task-list"></div>
+                </div>
+
+                <!-- Kanban View -->
+                <div id="kanbanView" class="view-container">
+                    <div class="kanban-board">
+                        <div class="kanban-column" data-status="todo">
+                            <div class="kanban-header">
+                                <h3 data-i18n="kanban.todo">To Do</h3>
+                                <span class="task-count" id="todoCount">0</span>
+                            </div>
+                            <div class="kanban-tasks" id="todoTasks"></div>
+                        </div>
+                        <div class="kanban-column" data-status="in-progress">
+                            <div class="kanban-header">
+                                <h3 data-i18n="kanban.inProgress">In Progress</h3>
+                                <span class="task-count" id="inProgressCount">0</span>
+                            </div>
+                            <div class="kanban-tasks" id="inProgressTasks"></div>
+                        </div>
+                        <div class="kanban-column" data-status="completed">
+                            <div class="kanban-header">
+                                <h3 data-i18n="kanban.completed">Completed</h3>
+                                <span class="task-count" id="completedTasksCount">0</span>
+                            </div>
+                            <div class="kanban-tasks" id="completedTasks"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle" data-i18n="modal.addTask">Add Task</h2>
+                <button class="btn-close" id="closeModal">&times;</button>
+            </div>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label for="taskTitle" data-i18n="modal.title">Title</label>
+                    <input type="text" id="taskTitle" required>
+                </div>
+                <div class="form-group">
+                    <label for="taskDescription" data-i18n="modal.description">Description</label>
+                    <textarea id="taskDescription" rows="3"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="taskCategory" data-i18n="modal.category">Category</label>
+                        <select id="taskCategory"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskPriority" data-i18n="modal.priority">Priority</label>
+                        <select id="taskPriority">
+                            <option value="low" data-i18n="priority.low">Low</option>
+                            <option value="medium" data-i18n="priority.medium" selected>Medium</option>
+                            <option value="high" data-i18n="priority.high">High</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="taskDueDate" data-i18n="modal.dueDate">Due Date</label>
+                        <input type="date" id="taskDueDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="taskStatus" data-i18n="modal.status">Status</label>
+                        <select id="taskStatus">
+                            <option value="todo" data-i18n="status.todo">To Do</option>
+                            <option value="in-progress" data-i18n="status.inProgress">In Progress</option>
+                            <option value="completed" data-i18n="status.completed">Completed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="taskParent" data-i18n="modal.parentTask">Parent Task (Optional)</label>
+                    <select id="taskParent">
+                        <option value="" data-i18n="modal.noParent">No Parent</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelModal" data-i18n="modal.cancel">Cancel</button>
+                    <button type="submit" class="btn-primary" data-i18n="modal.save">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="categoryModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2 data-i18n="categoryModal.title">Manage Categories</h2>
+                <button class="btn-close" id="closeCategoryModal">&times;</button>
+            </div>
+            <form id="categoryForm">
+                <div class="form-group">
+                    <label for="categoryName" data-i18n="categoryModal.name">Category Name</label>
+                    <input type="text" id="categoryName" required>
+                </div>
+                <div class="form-group">
+                    <label for="categoryColor" data-i18n="categoryModal.color">Color</label>
+                    <input type="color" id="categoryColor" value="#3b82f6">
+                </div>
+                <button type="submit" class="btn-primary" data-i18n="categoryModal.add">Add Category</button>
+            </form>
+            <div id="categoryManageList" class="category-manage-list"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
