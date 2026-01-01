@@ -81,7 +81,8 @@ const translations = {
             deleteCategory: 'Delete this category?',
             exportSuccess: 'Data exported successfully!',
             importSuccess: 'Data imported successfully!',
-            importError: 'Error importing data. Please check the file format.'
+            importError: 'Error importing data. Please check the file format.',
+            autoHideInfo: 'ℹ️ Completed tasks are automatically hidden after 3 days'
         }
     },
     ja: {
@@ -165,7 +166,8 @@ const translations = {
             deleteCategory: 'このカテゴリを削除しますか？',
             exportSuccess: 'データのエクスポートに成功しました！',
             importSuccess: 'データのインポートに成功しました！',
-            importError: 'データのインポートに失敗しました。ファイル形式を確認してください。'
+            importError: 'データのインポートに失敗しました。ファイル形式を確認してください。',
+            autoHideInfo: 'ℹ️ 完了したタスクは3日後に自動的に非表示になります'
         }
     }
 };
@@ -258,9 +260,20 @@ class TodoApp {
             this.tasks[taskIndex] = { ...this.tasks[taskIndex], ...updates };
             if (updates.status === 'completed') {
                 this.tasks[taskIndex].completed = true;
+                // Track when task was completed
+                if (!this.tasks[taskIndex].completedDate) {
+                    this.tasks[taskIndex].completedDate = new Date().toISOString();
+                }
             } else if (updates.hasOwnProperty('completed')) {
                 this.tasks[taskIndex].completed = updates.completed;
                 this.tasks[taskIndex].status = updates.completed ? 'completed' : 'todo';
+                // Track when task was completed
+                if (updates.completed && !this.tasks[taskIndex].completedDate) {
+                    this.tasks[taskIndex].completedDate = new Date().toISOString();
+                } else if (!updates.completed) {
+                    // Clear completedDate if task is unmarked
+                    this.tasks[taskIndex].completedDate = null;
+                }
             }
             this.saveData();
             this.render();
@@ -285,6 +298,13 @@ class TodoApp {
         if (task) {
             task.completed = !task.completed;
             task.status = task.completed ? 'completed' : 'todo';
+            // Track when task was completed
+            if (task.completed && !task.completedDate) {
+                task.completedDate = new Date().toISOString();
+            } else if (!task.completed) {
+                // Clear completedDate if task is unmarked
+                task.completedDate = null;
+            }
             this.saveData();
             this.render();
         }
@@ -350,6 +370,9 @@ class TodoApp {
             filtered = filtered.filter(task => this.isOverdue(task) && !task.completed);
         }
 
+        // Auto-hide completed tasks older than 3 days
+        filtered = filtered.filter(task => !this.shouldHideCompleted(task));
+
         // Sort
         filtered.sort((a, b) => {
             if (this.sortBy === 'dueDate') {
@@ -376,6 +399,22 @@ class TodoApp {
         dueDate.setHours(0, 0, 0, 0);
         today.setHours(0, 0, 0, 0);
         return dueDate < today;
+    }
+
+    shouldHideCompleted(task) {
+        // Auto-hide completed tasks after 3 days
+        if (!task.completed || !task.completedDate) return false;
+
+        const completedDate = new Date(task.completedDate);
+        const today = new Date();
+        const threeDaysAgo = new Date(today);
+        threeDaysAgo.setDate(today.getDate() - 3);
+
+        // Set to midnight for fair comparison
+        completedDate.setHours(0, 0, 0, 0);
+        threeDaysAgo.setHours(0, 0, 0, 0);
+
+        return completedDate < threeDaysAgo;
     }
 
     // ===== THEME =====
