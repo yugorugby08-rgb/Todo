@@ -369,7 +369,13 @@ class TodoApp {
 
     isOverdue(task) {
         if (!task.dueDate || task.completed) return false;
-        return new Date(task.dueDate) < new Date();
+        // Compare dates only (not time) - task is overdue only if due date is before today
+        const dueDate = new Date(task.dueDate);
+        const today = new Date();
+        // Set both to midnight for fair comparison
+        dueDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+        return dueDate < today;
     }
 
     // ===== THEME =====
@@ -712,9 +718,11 @@ class TodoApp {
         document.getElementById('taskPriority').value = task.priority;
         document.getElementById('taskStatus').value = task.status;
         document.getElementById('taskDueDate').value = task.dueDate ? task.dueDate.split('T')[0] : '';
+
+        // Update parent options first, then set the value
+        this.updateParentTaskOptions(taskId);
         document.getElementById('taskParent').value = task.parentId || '';
 
-        this.updateParentTaskOptions(taskId);
         document.getElementById('taskModal').classList.add('active');
     }
 
